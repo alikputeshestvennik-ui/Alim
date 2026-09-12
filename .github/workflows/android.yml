@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build installable Android APK
 
 on:
   push:
@@ -32,15 +32,15 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> "$GITHUB_PATH"
 
-      - name: Unpack and build APK
+      - name: Unpack and build signed debug APK
         run: |
           unzip -q BlackboxOffline_WHISPER_COMPACT.zip
           cd BlackboxOffline_WHISPER_COMPACT
-          gradle assembleRelease --no-daemon
+          gradle assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: BlackboxOffline-APK
-          path: BlackboxOffline_WHISPER_COMPACT/app/build/outputs/apk/release/*.apk
+          name: BlackboxOffline-installable-APK
+          path: BlackboxOffline_WHISPER_COMPACT/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
