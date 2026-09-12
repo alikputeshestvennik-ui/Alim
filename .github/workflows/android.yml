@@ -1,4 +1,4 @@
-name: Build installable Android APK
+name: Build fast signed APK
 
 on:
   push:
@@ -32,15 +32,24 @@ jobs:
           unzip -q gradle-8.7-bin.zip
           echo "$PWD/gradle-8.7/bin" >> "$GITHUB_PATH"
 
-      - name: Unpack and build signed debug APK
+      - name: Build optimized release APK
         run: |
           unzip -q BlackboxOffline_WHISPER_COMPACT.zip
           cd BlackboxOffline_WHISPER_COMPACT
-          gradle assembleDebug --no-daemon
+          gradle assembleRelease --no-daemon
 
-      - name: Upload installable APK
+      - name: Sign release APK
+        run: |
+          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          APK="BlackboxOffline_WHISPER_COMPACT/app/build/outputs/apk/release/app-release-unsigned.apk"
+          keytool -genkeypair -keystore release-key.jks -storepass blackbox2026 -keypass blackbox2026 -alias blackbox -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Blackbox Offline, OU=Personal, O=Blackbox, L=Local, ST=Local, C=RU"
+          "$BUILD_TOOLS/zipalign" -f -p 4 "$APK" app-release-aligned.apk
+          "$BUILD_TOOLS/apksigner" sign --ks release-key.jks --ks-key-alias blackbox --ks-pass pass:blackbox2026 --key-pass pass:blackbox2026 --out BlackboxOffline-release.apk app-release-aligned.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose BlackboxOffline-release.apk
+
+      - name: Upload signed optimized APK
         uses: actions/upload-artifact@v4
         with:
-          name: BlackboxOffline-installable-APK
-          path: BlackboxOffline_WHISPER_COMPACT/app/build/outputs/apk/debug/*.apk
+          name: BlackboxOffline-fast-signed-APK
+          path: BlackboxOffline-release.apk
           if-no-files-found: error
